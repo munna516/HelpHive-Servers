@@ -25,6 +25,12 @@ async function run() {
       .db("Volunteer-Management")
       .collection("Volunteer-Need-Post");
 
+    // Get All Volunteer Post
+    app.get("/all-volunteer-need-post", async (req, res) => {
+      const result = await volunteerNeedPostCollection.find().toArray();
+      res.send(result);
+    });
+
     // Volunteer Need Post
     app.post("/volunteer-need-post", async (req, res) => {
       const volunteerNeedPost = req.body;
