@@ -31,7 +31,17 @@ async function run() {
 
     // Get All Volunteer Post
     app.get("/all-volunteer-need-post", async (req, res) => {
-      const result = await volunteerNeedPostCollection.find().toArray();
+      const search = req.query.search;
+      let options = {};
+      let query = {
+        title: {
+          $regex: search,
+          $options: "i",
+        },
+      };
+      const result = await volunteerNeedPostCollection
+        .find(query, options)
+        .toArray();
       res.send(result);
     });
     // Get a Specific Post
@@ -54,7 +64,7 @@ async function run() {
     app.post("/volunteer-request", async (req, res) => {
       const volunteerReq = req.body;
       const result = await volunteerRequestCollection.insertOne(volunteerReq);
-      
+
       //1. Decrease the volunteer Need count
       const filter = { _id: new ObjectId(volunteerReq.postId) };
       const update = {
