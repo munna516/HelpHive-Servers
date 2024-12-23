@@ -44,11 +44,27 @@ async function run() {
         .toArray();
       res.send(result);
     });
-    // Get a Specific Post
+    // Get a Specific Post by id
     app.get("/volunteer-post/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await volunteerNeedPostCollection.findOne(query);
+      res.send(result);
+    });
+
+    //  Get a specifix post by Email
+    app.get("/my-post/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { "organizer.email": email };
+      const result = await volunteerNeedPostCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // Get a Specifix request By Email
+    app.get("/my-request/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { "volunteer.volunteerEmail": email };
+      const result = await volunteerRequestCollection.find(query).toArray();
       res.send(result);
     });
     // Volunteer Need Post
