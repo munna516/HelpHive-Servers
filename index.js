@@ -1,11 +1,20 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 const app = express();
+const cookieParser = require("cookie-parser");
+
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  })
+);
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hqlh5.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -18,6 +27,19 @@ const client = new MongoClient(uri, {
   },
 });
 
+// verifyToken
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) return res.status(401).send({ message: "unauthorized access" });
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.user = decoded;
+  });
+  next();
+};
+
 async function run() {
   try {
     // Data Base
@@ -28,7 +50,29 @@ async function run() {
     const volunteerRequestCollection = client
       .db("Volunteer-Management")
       .collection("Volunteer-Request");
-
+      
+    // Generate Jwt
+    app.post("/jwt", async (req, res) => {
+      const email = req.body;
+      const token = jwt.sign(email, process.env.JWT_SECRET, {
+        expiresIn: "365d",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    });
+    // logout || clear cookie from browser
+    app.post("/logout", async (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    });
     // Get All Volunteer Post
     app.get("/all-volunteer-need-post", async (req, res) => {
       const search = req.query.search;
@@ -45,7 +89,7 @@ async function run() {
       res.send(result);
     });
     // Get a Specific Post by id
-    app.get("/volunteer-post/:id", async (req, res) => {
+    app.get("/volunteer-post/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await volunteerNeedPostCollection.findOne(query);
@@ -53,22 +97,28 @@ async function run() {
     });
 
     //  Get a specifix post by Email
-    app.get("/my-post/:email", async (req, res) => {
-      const email = req.params.email;
+    app.get("/my-post", verifyToken, async (req, res) => {
+      const email = req.query.email;
+      if (req.user?.email !== req.query.email) {
+        return res.status(403).send({ message: "Forbidden" });
+      }
       const query = { "organizer.email": email };
       const result = await volunteerNeedPostCollection.find(query).toArray();
       res.send(result);
     });
 
     // Get a Specifix request By Email
-    app.get("/my-request/:email", async (req, res) => {
-      const email = req.params.email;
+    app.get("/my-request", verifyToken, async (req, res) => {
+      const email = req.query.email;
+      if (req.user?.email !== req.query.email) {
+        return res.status(403).send({ message: "Forbidden" });
+      }
       const query = { "volunteer.volunteerEmail": email };
       const result = await volunteerRequestCollection.find(query).toArray();
       res.send(result);
     });
     // Volunteer Need Post
-    app.post("/volunteer-need-post", async (req, res) => {
+    app.post("/volunteer-need-post", verifyToken, async (req, res) => {
       const volunteerNeedPost = req.body;
       const result = await volunteerNeedPostCollection.insertOne(
         volunteerNeedPost
@@ -77,7 +127,7 @@ async function run() {
     });
 
     // Be a Volunter Request
-    app.post("/volunteer-request", async (req, res) => {
+    app.post("/volunteer-request", verifyToken, async (req, res) => {
       const volunteerReq = req.body;
       const result = await volunteerRequestCollection.insertOne(volunteerReq);
 
@@ -104,7 +154,7 @@ async function run() {
     });
 
     // Update Need Volunteer By Id
-    app.put("/update-post/:id", async (req, res) => {
+    app.put("/update-post/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const updatePost = req.body;
       const updated = {
@@ -121,14 +171,14 @@ async function run() {
     });
 
     // Delete My Post
-    app.delete("/delete-post/:id", async (req, res) => {
+    app.delete("/delete-post/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await volunteerNeedPostCollection.deleteOne(query);
       res.send(result);
     });
     // Cancle My Request
-    app.delete("/cancle-request/:id", async (req, res) => {
+    app.delete("/cancle-request/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await volunteerRequestCollection.deleteOne(query);
