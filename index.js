@@ -92,6 +92,16 @@ async function run() {
       );
       res.send(result);
     });
+    // Volunteer Nees Now Section
+    app.get("/volunteer-need-now", async (req, res) => {
+      const result = await volunteerNeedPostCollection
+        .find()
+        .sort({ deadline: 1 })
+        .limit(6)
+        .toArray();
+
+      res.send(result);
+    });
 
     // Update Need Volunteer By Id
     app.put("/update-post/:id", async (req, res) => {
