@@ -30,10 +30,11 @@ const client = new MongoClient(uri, {
 // verifyToken
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
-  if (!token) return res.status(401).send({ message: "Unauthorized access" });
+  if (!token)
+    return res.status(401).send({ message: "401 Unauthorized access" });
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
-      return res.status(401).send({ message: "Unauthorized access" });
+      return res.status(401).send({ message: "401 Unauthorized access" });
     }
     req.user = decoded;
     next();
@@ -53,9 +54,14 @@ async function run() {
     const eventCollection = client
       .db("Volunteer-Management")
       .collection("Upcoming-Event");
+
     const eventRegisterCollection = client
       .db("Volunteer-Management")
       .collection("Event-Register");
+
+    const volunteerOfWeekCollection = client
+      .db("Volunteer-Management")
+      .collection("Volunteer-of-Week");
 
     // Generate Jwt
     app.post("/jwt", async (req, res) => {
@@ -107,9 +113,9 @@ async function run() {
     app.get("/my-post", verifyToken, async (req, res) => {
       const email = req.query.email;
       if (req.user?.email !== req.query.email) {
-        return res
-          .status(403)
-          .send({ message: "Access to the requested resource is forbidden" });
+        return res.status(403).send({
+          message: "403 : Access to the requested resource is forbidden",
+        });
       }
       const query = { "organizer.email": email };
       const result = await volunteerNeedPostCollection.find(query).toArray();
@@ -120,7 +126,9 @@ async function run() {
     app.get("/my-request", verifyToken, async (req, res) => {
       const email = req.query.email;
       if (req.user?.email !== req.query.email) {
-        return res.status(403).send({ message: "Forbidden" });
+        return res.status(403).send({
+          message: "403 : Access to the requested resource is forbidden",
+        });
       }
       const query = { "volunteer.volunteerEmail": email };
       const result = await volunteerRequestCollection.find(query).toArray();
@@ -224,7 +232,11 @@ async function run() {
         res.send(result);
       }
     });
-
+    // Volunteer Of the Week
+    app.get("/volunteer-of-week", async (req, res) => {
+      const result = await volunteerOfWeekCollection.find().toArray();
+      res.send(result);
+    });
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     // Send a ping to confirm a successful connection
