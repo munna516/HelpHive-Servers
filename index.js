@@ -50,6 +50,12 @@ async function run() {
     const volunteerRequestCollection = client
       .db("Volunteer-Management")
       .collection("Volunteer-Request");
+    const eventCollection = client
+      .db("Volunteer-Management")
+      .collection("Upcoming-Event");
+    const eventRegisterCollection = client
+      .db("Volunteer-Management")
+      .collection("Event-Register");
 
     // Generate Jwt
     app.post("/jwt", async (req, res) => {
@@ -197,6 +203,26 @@ async function run() {
         update
       );
       res.send(result);
+    });
+    // Upcoming Event
+    app.get("/upcoming-event", async (req, res) => {
+      const result = await eventCollection.find().toArray();
+      res.send(result);
+    });
+    // Register
+    app.post("/event-registration", async (req, res) => {
+      const register = req.body;
+      const filter = {
+        eventId: register.eventId,
+        email: register.email,
+      };
+      const result1 = await eventRegisterCollection.findOne(filter);
+      if (result1) {
+        res.send("Already Registered");
+      } else {
+        const result = await eventRegisterCollection.insertOne(register);
+        res.send(result);
+      }
     });
 
     // Connect the client to the server	(optional starting in v4.7)
