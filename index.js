@@ -30,14 +30,14 @@ const client = new MongoClient(uri, {
 // verifyToken
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
-  if (!token) return res.status(401).send({ message: "unauthorized access" });
+  if (!token) return res.status(401).send({ message: "Unauthorized access" });
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
-      return res.status(401).send({ message: "unauthorized access" });
+      return res.status(401).send({ message: "Unauthorized access" });
     }
     req.user = decoded;
+    next();
   });
-  next();
 };
 
 async function run() {
@@ -50,7 +50,7 @@ async function run() {
     const volunteerRequestCollection = client
       .db("Volunteer-Management")
       .collection("Volunteer-Request");
-      
+
     // Generate Jwt
     app.post("/jwt", async (req, res) => {
       const email = req.body;
@@ -64,6 +64,7 @@ async function run() {
         })
         .send({ success: true });
     });
+
     // logout || clear cookie from browser
     app.post("/logout", async (req, res) => {
       res
@@ -100,7 +101,9 @@ async function run() {
     app.get("/my-post", verifyToken, async (req, res) => {
       const email = req.query.email;
       if (req.user?.email !== req.query.email) {
-        return res.status(403).send({ message: "Forbidden" });
+        return res
+          .status(403)
+          .send({ message: "Access to the requested resource is forbidden" });
       }
       const query = { "organizer.email": email };
       const result = await volunteerNeedPostCollection.find(query).toArray();
@@ -181,7 +184,18 @@ async function run() {
     app.delete("/cancle-request/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
+      const result1 = await volunteerRequestCollection.findOne(query);
       const result = await volunteerRequestCollection.deleteOne(query);
+
+      //1. Increase the volunteer Need count
+      const filter = { _id: new ObjectId(result1.postId) };
+      const update = {
+        $inc: { numberOfVolunteer: 1 },
+      };
+      const updateCount = await volunteerNeedPostCollection.updateOne(
+        filter,
+        update
+      );
       res.send(result);
     });
 
