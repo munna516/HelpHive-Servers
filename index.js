@@ -10,7 +10,11 @@ const cookieParser = require("cookie-parser");
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173","https://assignment-11-65909.web.app","https://assignment-11-65909.firebaseapp.com"],
+    origin: [
+      "http://localhost:5173",
+      "https://assignment-11-65909.web.app",
+      "https://assignment-11-65909.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -104,7 +108,7 @@ async function run() {
       res.send(result);
     });
     // Get a Specific Post by id
-    app.get("/volunteer-post/:id", verifyToken, async (req, res) => {
+    app.get("/volunteer-post/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await volunteerNeedPostCollection.findOne(query);
@@ -166,7 +170,7 @@ async function run() {
       const result = await volunteerNeedPostCollection
         .find()
         .sort({ deadline: 1 })
-        .limit(6)
+        .limit(4)
         .toArray();
 
       res.send(result);
@@ -239,13 +243,30 @@ async function run() {
       const result = await volunteerOfWeekCollection.find().toArray();
       res.send(result);
     });
-    // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
-    // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    // console.log(
-    //   "Pinged your deployment. You successfully connected to MongoDB!"
-    // );
+    // Sort Functionality
+    app.get("/sort-by", async (req, res) => {
+      const sortBy = req.query.sort;
+      if (sortBy === "Number") {
+        const result = await volunteerNeedPostCollection
+          .find()
+          .sort({ numberOfVolunteer: -1 })
+          .toArray();
+        res.send(result);
+      } else if (sortBy === "Deadline") {
+        const result = await volunteerNeedPostCollection
+          .find()
+          .sort({ deadline: 1 })
+          .toArray();
+        res.send(result);
+      }
+    });
+    //Connect the client to the server	(optional starting in v4.7)
+    await client.connect();
+    //Send a ping to confirm a successful connection
+    await client.db("admin").command({ ping: 1 });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
