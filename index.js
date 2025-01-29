@@ -12,8 +12,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://assignment-11-65909.web.app",
-      "https://assignment-11-65909.firebaseapp.com",
+      "https://helphive-a7381.web.app",
+      "https://helphive-a7381.firebaseapp.com",
     ],
     credentials: true,
   })
@@ -261,7 +261,7 @@ async function run() {
       }
     });
     //Connect the client to the server	(optional starting in v4.7)
-   // await client.connect();
+    // await client.connect();
     //Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     // console.log(
